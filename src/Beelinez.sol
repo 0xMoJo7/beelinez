@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import '@openzeppelin/contracts/access/Ownable.sol';
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import '@openzeppelin/contracts/utils/Counters.sol';
+import "base64-sol/base64.sol";
 
 
 contract Beelinez is ERC721Enumerable, Ownable {
@@ -25,10 +25,10 @@ contract Beelinez is ERC721Enumerable, Ownable {
     
     // Setup for 4 contributors
     address[4] private _shareholders = [
-        0x04C8a5eB62F208FA2c91d017ee5C60e00F54BcF2, 
-        0x29c36265c63fE0C3d024b2E4d204b49deeFdD671, 
-        0x92a7BD65c8b2a9c9d98be8eAa92de46d1fbdefaF, 
-        0x958C09c135650F50b398b3D1E8c4ce9227e5CCEf
+        "address1",
+        "address2",
+        "address3",
+        "address4"
     ];
     uint[4] private _shares = [20000, 20000, 20000, 40000];
     uint256 private constant baseMod = 100000;
@@ -41,7 +41,7 @@ contract Beelinez is ERC721Enumerable, Ownable {
     string public baseTokenURI;
 
     // Turning on and off minting / presale / publicsale
-    bool public publicMintingEnabled; 
+    bool public publicMintingEnabled = true; 
     bool public publicSaleStarted;
     bool public presaleStarted;
     
@@ -78,14 +78,30 @@ contract Beelinez is ERC721Enumerable, Ownable {
         _;
     }
  
-    /* ============= Token URI ============= */
+    /* ============= SVG/Token URI ============= */
 
-    function _baseURI() internal view override returns (string memory) {
-        return baseTokenURI;
+
+
+    function svgToImageURI(string memory svg) public pure returns (string memory) {
+        string memory baseURL = "data:image/svg+xml;base64,";
+        string memory svgBase64Encoded = Base64.encode(bytes(string(abi.encodePacked(svg))));
+        return string(abi.encodePacked(baseURL,svgBase64Encoded));
     }
-
-    function setBaseURI(string memory newUri) external onlyOwnerOrTeam {
-        baseTokenURI = newUri;
+    
+    function formatTokenURI(string memory id, string memory imageURI) public pure returns (string memory) {
+        return string(
+                abi.encodePacked(
+                    "data:application/json;base64,",
+                    Base64.encode(
+                        bytes(
+                            abi.encodePacked(
+                                '{"name":"','"BEELINEZ "',id,'"}"'
+                                '", "description":"BEELINES", "attributes":"", "image":"',imageURI,'"}'
+                            )
+                        )
+                    )
+                )
+            );
     }
     
     /* ============= Toggle Minting ============= */
@@ -93,7 +109,7 @@ contract Beelinez is ERC721Enumerable, Ownable {
     function publicToggleMinting() external onlyOwnerOrTeam {
         publicMintingEnabled = !publicMintingEnabled;
     }
-    
+
     /* ============= Edit Max Mint and Price ============= */
     
     function setPublicPrice(uint256 newPublicPrice) external onlyOwnerOrTeam {
